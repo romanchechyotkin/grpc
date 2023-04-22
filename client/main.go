@@ -14,12 +14,16 @@ import (
 const ADDRESS = "localhost:5000"
 
 func main() {
-	conn, err := grpc.Dial(ADDRESS, grpc.WithInsecure())
+	conn, err := grpc.Dial(
+		ADDRESS,
+		grpc.WithInsecure(),
+		grpc.WithUnaryInterceptor(orderUnaryClientInterceptor),
+		grpc.WithStreamInterceptor(orderStreamClientInterceptor),
+	)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer conn.Close()
-
 	client := pb.NewOrderManagementClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
