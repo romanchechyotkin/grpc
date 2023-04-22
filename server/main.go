@@ -57,7 +57,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(orderUnaryServerInterceptor),
+		grpc.StreamInterceptor(orderStreamServerInterceptor),
+	)
 	pb.RegisterOrderManagementServer(s, srv)
 	log.Printf("Starting gRPC listener on port " + PORT)
 	if err = s.Serve(listen); err != nil {
