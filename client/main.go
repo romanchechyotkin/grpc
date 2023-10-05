@@ -73,7 +73,46 @@ func main() {
 	fmt.Println(stringValue)
 
 	// Двунаправленный потоковый RPC
+	streamProcOrder, _ := client.ProcessOrders(ctx)
+	if err := streamProcOrder.Send(
+		&wrapperspb.StringValue{Value: "1"}); err != nil {
+		log.Fatalf("%v.Send(%v) = %v", client, "1", err)
+	}
+	if err := streamProcOrder.Send(
+		&wrapperspb.StringValue{Value: "2"}); err != nil {
+		log.Fatalf("%v.Send(%v) = %v", client, "2", err)
+	}
+	if err := streamProcOrder.Send(
+		&wrapperspb.StringValue{Value: "3"}); err != nil {
+		log.Fatalf("%v.Send(%v) = %v", client, "3", err)
+	}
 
+	channel := make(chan struct{})
+	go asncClientBidirectionalRPC(streamProcOrder, channel)
+
+	time.Sleep(time.Microsecond * 1000)
+
+	if err := streamProcOrder.Send(
+		&wrapperspb.StringValue{Value: "4"}); err != nil {
+		log.Fatalf("%v.Send(%v) = %v", client, "4", err)
+	}
+
+	if err := streamProcOrder.CloseSend(); err != nil {
+		log.Fatal(err)
+	}
+
+	<-channel
+}
+
+func asncClientBidirectionalRPC(stream pb.OrderManagement_ProcessOrdersClient, channel chan struct{}) {
+	for {
+		shipment, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		log.Println(shipment.OrdersList)
+	}
+	channel <- struct{}{}
 }
 
 func orderUnaryClientInterceptor(

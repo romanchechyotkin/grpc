@@ -19,8 +19,6 @@ import (
 const PORT = ":5000"
 const NETWORK = "tcp"
 
-var combinedShipmentMap map[string]pb.CombinedShipment
-
 type server struct {
 	orderMap map[string]*pb.Order
 }
@@ -70,6 +68,8 @@ func (s *server) UpdateOrders(stream pb.OrderManagement_UpdateOrdersServer) erro
 }
 
 func (s *server) ProcessOrders(stream pb.OrderManagement_ProcessOrdersServer) error {
+	const orderBatchSize = 3
+	combinedShipmentMap := make(map[string]pb.CombinedShipment)
 
 	for {
 		orderId, err := stream.Recv()
@@ -83,6 +83,33 @@ func (s *server) ProcessOrders(stream pb.OrderManagement_ProcessOrdersServer) er
 		if err != nil {
 			return err
 		}
+
+		order, err := s.GetOrder(context.Background(), orderId)
+		log.Println("got", order)
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+
+		val, ok := combinedShipmentMap[order.Destination]
+		log.Println(val)
+		if !ok {
+			log.Println("created ")
+			combinedShipmentMap[order.Destination] = pb.CombinedShipment{}
+		}
+
+		val.OrdersList = append(val.OrdersList, order)
+		log.Println("added", val.OrdersList, len(val.OrdersList), cap(val.OrdersList))
+
+		if len(val.OrdersList) == orderBatchSize {
+			// передаем клиенту поток заказов, объединенных в партии
+			for _, comb := range combinedShipmentMap {
+				log.Println(comb)
+				// передаем клиенту партию объединенных заказов
+				stream.Send(&comb)
+			}
+		}
+
 	}
 
 }
