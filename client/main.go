@@ -1,14 +1,16 @@
 package main
 
 import (
-	pb "client/ecommerce"
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"io"
 	"log"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	pb "client/ecommerce"
 )
 
 const ADDRESS = "localhost:5000"

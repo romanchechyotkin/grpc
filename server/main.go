@@ -1,9 +1,11 @@
 package main
 
 import (
-	"google.golang.org/grpc"
 	"log"
 	"net"
+
+	"google.golang.org/grpc"
+
 	pb "server/ecommerce"
 )
 
